@@ -167,6 +167,12 @@ class ReverseProxyBasePlugin(ABC):
         If None is returned, request will be dropped and closed."""
         return request  # pragma: no cover
 
+    def after_handling_upstream_data(self, response: HttpParser) -> Optional[HttpParser]:
+        """Plugins can modify response, return response.
+
+        If None is returned, response will not be modified."""        
+        return None
+
     def handle_route(self, request: HttpParser, pattern: RePattern) -> Url:
         """Implement this method if you have configured dynamic routes."""
         pass

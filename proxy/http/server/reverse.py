@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Optional
 
 from proxy.http import Url
 from proxy.core.base import TcpUpstreamConnectionHandler
-from proxy.http.parser import HttpParser
+from proxy.http.parser import HttpParser, httpParserTypes
 from proxy.http.server import HttpWebServerBasePlugin, httpProtocolTypes
 from proxy.common.utils import text_
 from proxy.http.exception import HttpProtocolException
@@ -46,9 +46,25 @@ class ReverseProxy(TcpUpstreamConnectionHandler, HttpWebServerBasePlugin):
             self.plugins.append(plugin)
 
     def handle_upstream_data(self, raw: memoryview) -> None:
-        # TODO: Parse response and implement plugin hook per parsed response object
-        # This will give plugins a chance to modify the responses before dispatching to client
-        self.client.queue(raw)
+        # Parse response and implement plugin hook per parsed response object
+        # This will give plugins a chance to modify the responses before dispatching to client             
+        response = HttpParser(httpParserTypes.RESPONSE_PARSER)
+        logger.debug("Parsing the upstream data...")
+        response.parse(raw)
+        if response.is_complete:
+                logger.debug(
+                    "Response completed with status code %s",
+                    response.code,
+                )         
+
+        for plugin in self.plugins:
+            r = plugin.after_handling_upstream_data(response)
+            if r is None:
+                self.client.queue(raw)
+                return 
+            response = r   
+
+        self.client.queue(memoryview(response.build_response()))
 
     def routes(self) -> List[Tuple[int, str]]:
         r = []
