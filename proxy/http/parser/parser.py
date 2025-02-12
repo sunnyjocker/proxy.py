@@ -391,7 +391,7 @@ class HttpParser:
             self,
             raw: memoryview,
             allowed_url_schemes: Optional[List[bytes]] = None,
-    ) -> Tuple[bool, memoryview]:
+    ) -> Tuple[bool, memoryview]:        
         while True:
             parts = raw.tobytes().split(CRLF, 1)
             if len(parts) == 1:
@@ -420,11 +420,12 @@ class HttpParser:
                 raise HttpProtocolException(
                     'Invalid request line %r' % raw.tobytes(),
                 )
-            parts = line.split(WHITESPACE, 2)
-            self.version = parts[0]
-            self.code = parts[1]
-            # Our own WebServerPlugin example currently doesn't send any reason
-            if len(parts) == 3:
+            parts = line.split(WHITESPACE, 2)   
+            # modified by mos, 20250212, fix sse(server sent event) issue         
+            if len(parts) == 3:            
+                self.version = parts[0]
+                self.code = parts[1]
+                # Our own WebServerPlugin example currently doesn't send any reason
                 self.reason = parts[2]
             self.state = httpParserStates.LINE_RCVD
             break
